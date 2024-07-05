@@ -1,0 +1,8 @@
+---
+cisco:
+  username: admin
+  password: cisco
+  port: 22
+  platform: iosxe
+  connection_options:
+    transport: telnet

@@ -1,0 +1,4 @@
+{% for loopback in loopbacks %}
+interface {{ loopback.get("interface_name") }}
+    ip address {{ loopback.get("ip") }} {{ loopback.get("subnet") }}
+{% endfor %}

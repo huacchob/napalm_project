@@ -14,6 +14,7 @@ jinja2 = "^3.1.4"
 nornir = "^3.4.1"
 nornir-napalm = "^0.5.0"
 pyyaml = "^6.0.1"
+ipython = "^8.26.0"
 
 
 [build-system]

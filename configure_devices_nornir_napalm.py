@@ -7,7 +7,7 @@ from netutils.lib_mapper import NETMIKO_LIB_MAPPER_REVERSE, NAPALM_LIB_MAPPER_RE
 from jinja2 import Environment, FileSystemLoader
 import os
 import yaml
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 """
 This script is meant to connect to Devices via NAPALM.
@@ -109,7 +109,7 @@ class Jinja2Environment(UtilityMixin):
         self.jinja_env = self.setup_jinja2_env()
         self.j2_rendered_template = self.render_jinja2_variables()
 
-    def setup_jinja2_env(self):
+    def setup_jinja2_env(self) -> Environment:
         """
         Setup jinja2 environment.
         """
@@ -117,14 +117,14 @@ class Jinja2Environment(UtilityMixin):
         template_directory = f"{self.find_current_dir()}{template_rel_dir_path}"
         return Environment(loader=FileSystemLoader(template_directory))
 
-    def render_jinja2_variables(self):
+    def render_jinja2_variables(self) -> str:
         """
         Render jinja2 variables.
         """
         template = self.jinja_env.get_template(self.template_name)
         return template.render(self.j2_vars)
 
-    def create_config_file(self):
+    def create_config_file(self) -> str:
         """
         Create config file.
         """
@@ -145,25 +145,22 @@ class NetmikoDriverGuesser:
         self,
         device_ips: list,
         username: str,
-        secret: str,
+        secret: Optional[str],
         password: str,
-        device_type: str = "autodetect",
     ):
         """
         device_ips: list - list of device ips to connect to
         username: str - username to connect with
         password: str - password to connect with
         secret: str - secret to connect with (OPTIONAL if secret is different than password)
-        device_type: str - type of device, defaults to autodetect.
         """
         self.device_ips = device_ips
         self.username = username
         self.secret = secret
         self.password = password
-        self.device_type = device_type
         self.list_of_netmiko_device_params = self.create_netmiko_device_params()
 
-    def create_netmiko_device_params(self):
+    def create_netmiko_device_params(self) -> List[Dict]:
         """
         Create netmiko device params.
         """
@@ -178,14 +175,14 @@ class NetmikoDriverGuesser:
         if self.secret:
             base_params.update({"secret": self.secret})
 
-        device_conn_params = []
+        device_conn_params: List[Dict] = []
         for ip in self.device_ips:
             base_param_copy = base_params.copy()
             base_param_copy.update({"host": ip})
             device_conn_params.append(base_param_copy)
         return device_conn_params
 
-    def get_netmiko_platform(self):
+    def get_netmiko_platform(self) -> List[str]:
         """
         Get netmiko platform.
         """
@@ -215,27 +212,27 @@ class NapalmDriverGuesser:
             self.normalize_netmiko_platform()
         )
 
-    def normalize_netmiko_platform(self):
+    def normalize_netmiko_platform(self) -> List[str]:
         """
         Normalized netmiko platform.
         Using NETMIKO_LIB_MAPPER_REVERSE.
         """
-        normalized_platforms = [
+        normalized_platforms: List[str] = [
             NETMIKO_LIB_MAPPER_REVERSE.get(platform, "")
             for platform in self.netmiko_guesser
         ]
 
         return normalized_platforms
 
-    def get_napalm_driver(self):
+    def get_napalm_driver(self) -> List[Type[NetworkDriver]]:
         """
         Get napalm driver.
         """
-        napalm_netutils_drivers = [
+        napalm_netutils_drivers: List[str] = [
             NAPALM_LIB_MAPPER_REVERSE.get(platform, "")
             for platform in self.list_of_normalized_netmiko_platforms
         ]
-        napalm_drivers = []
+        napalm_drivers: List[Type[NetworkDriver]] = []
         for driver in napalm_netutils_drivers:
             napalm_drivers.append(get_network_driver(driver))
 
@@ -252,11 +249,11 @@ class NapalmDeviceConnection:
     def __init__(
         self,
         jinja_config_file_path: str,
-        napalm_drivers: List[NetworkDriver],
+        napalm_drivers: List[type[NetworkDriver]],
         device_ips: list,
         username: str,
         password: str,
-        secret: str,
+        secret: Optional[str],
     ):
         """
         jinja_config_file_path: Jinja2Environment - jinja2 environment
@@ -277,7 +274,7 @@ class NapalmDeviceConnection:
         )
         self.list_of_device_connections: List[NetworkDriver] = self.connect_to_device()
 
-    def create_napalm_device_params(self):
+    def create_napalm_device_params(self) -> List[Dict]:
         """
         Create napalm device params.
         """
@@ -301,7 +298,7 @@ class NapalmDeviceConnection:
             device_conn_params.append(copy_params)
         return device_conn_params
 
-    def connect_to_device(self):
+    def connect_to_device(self) -> List[NetworkDriver]:
         """
         Connect to device.
         """
@@ -314,7 +311,7 @@ class NapalmDeviceConnection:
 
         return connections
 
-    def send_config_file(self):
+    def send_config_file(self) -> List[NetworkDriver]:
         """
         Send config file.
         """
@@ -326,7 +323,7 @@ class NapalmDeviceConnection:
         print("Connected to devices and loaded configs")
         return self.list_of_device_connections
 
-    def commit_config(self):
+    def commit_config(self) -> List[NetworkDriver]:
         """
         Commit config.
         """
@@ -337,7 +334,7 @@ class NapalmDeviceConnection:
 
     def return_saved_configs(self):
         """
-        Return saved configs.
+        Return saved configs and close connections.
         """
         self.list_of_device_connections = self.commit_config()
         for conn in self.list_of_device_connections:
@@ -348,15 +345,15 @@ class NapalmDeviceConnection:
 
 
 def connect_to_device(
-    device_ips,
-    username,
-    password,
-    secret,
-    j2_vars,
-    template_dir,
-    template_name,
-    config_dir,
-    config_file,
+    device_ips: list[str],
+    username: str,
+    password: str,
+    secret: Optional[str],
+    j2_vars: dict,
+    template_dir: str,
+    template_name: str,
+    config_dir: str,
+    config_file: str,
 ):
     """
     Connect to device.

@@ -1,6 +1,9 @@
 
 interface lo1
-    ip address 2.2.2.2 255.255.255.255
+    ip address 1.1.1.1 255.255.255.255
 
 interface lo2
+    ip address 2.2.2.2 255.255.255.255
+
+interface lo3
     ip address 3.3.3.3 255.255.255.255

@@ -7,7 +7,7 @@ from netutils.lib_mapper import NETMIKO_LIB_MAPPER_REVERSE, NAPALM_LIB_MAPPER_RE
 from jinja2 import Environment, FileSystemLoader
 import os
 import yaml
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type
 
 """
 This script is meant to connect to Devices via NAPALM.
@@ -37,7 +37,7 @@ class UtilityMixin:
             path = f"{path}/"
         return path
 
-    def read_yaml_file(self, file_path: str, file_name: str) -> dict:
+    def read_yaml_file(self, file_path: str, file_name: str) -> Dict:
         """
         Read yaml file
         file_path = str representing a path.

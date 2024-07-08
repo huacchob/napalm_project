@@ -1,0 +1,11 @@
+---
+loopbacks:
+  - interface_name: lo1
+    ip: 1.1.1.1
+    subnet: 255.255.255.255
+  - interface_name: lo2
+    ip: 2.2.2.2
+    subnet: 255.255.255.255
+  - interface_name: lo3
+    ip: 3.3.3.3
+    subnet: 255.255.255.255

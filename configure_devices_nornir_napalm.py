@@ -7,7 +7,7 @@ from netutils.lib_mapper import NETMIKO_LIB_MAPPER_REVERSE, NAPALM_LIB_MAPPER_RE
 from jinja2 import Environment, FileSystemLoader
 import os
 import yaml
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type
 
 """
 This script is meant to connect to Devices via NAPALM.
@@ -20,13 +20,13 @@ class UtilityMixin:
     Class for utility functions.
     """
 
-    def find_current_dir(self):
+    def find_current_dir(self) -> str:
         """
         Find current directory.
         """
         return os.path.dirname((__file__))
 
-    def add_forward_slash(self, path: str):
+    def add_forward_slash(self, path: str) -> str:
         """
         Add forward slash to path
         path = str representing a path.
@@ -36,6 +36,18 @@ class UtilityMixin:
         if not path.endswith("/"):
             path = f"{path}/"
         return path
+
+    def read_yaml_file(self, file_path: str, file_name: str) -> Dict:
+        """
+        Read yaml file
+        file_path = str representing a path.
+        file_name = str representing a file name.
+        """
+        vars_file_name = (
+            f"{self.find_current_dir()}{self.add_forward_slash(file_path)}{file_name}"
+        )
+        with open(vars_file_name, "r", encoding="utf-8") as vars_file:
+            return yaml.safe_load(vars_file)
 
 
 class NornirInitializer(UtilityMixin):
@@ -68,7 +80,7 @@ class Jinja2Environment(UtilityMixin):
         template_name: str,
         config_dir: str,
         config_file: str,
-        j2_vars: dict,
+        j2_vars: Optional[dict],
     ):
         """
         template_dir: str - directory of jinja2 templates
@@ -122,7 +134,12 @@ class Jinja2Environment(UtilityMixin):
         Render jinja2 variables.
         """
         template = self.jinja_env.get_template(self.template_name)
-        return template.render(self.j2_vars)
+        jinja_vars = (
+            template.render(self.read_yaml_file("j2_vars", "ios.yml"))
+            if not self.j2_vars
+            else template.render(self.j2_vars)
+        )
+        return jinja_vars
 
     def create_config_file(self) -> str:
         """
@@ -349,7 +366,7 @@ def connect_to_device(
     username: str,
     password: str,
     secret: Optional[str],
-    j2_vars: dict,
+    j2_vars: Optional[dict],
     template_dir: str,
     template_name: str,
     config_dir: str,
@@ -412,7 +429,7 @@ connect_to_device(
     username="admin",
     password="cisco",
     secret=None,
-    j2_vars=j2_vars,
+    j2_vars=None,
     template_dir="\\templates\\",
     template_name="full_config.j2",
     config_dir="\\intended_config\\",

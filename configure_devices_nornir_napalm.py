@@ -2,18 +2,18 @@
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
-from jinja2 import Environment, FileSystemLoader, Template
 
+import yaml
+from jinja2 import Environment, FileSystemLoader, Template
 from napalm import get_network_driver  # type: ignore
 from napalm.base import NetworkDriver  # type: ignore
-from nornir import InitNornir
-from nornir.core import Nornir
 from netmiko import SSHDetect  # type: ignore
 from netutils.lib_mapper import (
-    NETMIKO_LIB_MAPPER_REVERSE,
     NAPALM_LIB_MAPPER_REVERSE,
+    NETMIKO_LIB_MAPPER_REVERSE,
 )
-import yaml
+from nornir import InitNornir
+from nornir.core import Nornir
 
 NoneOrStr = Union[None, str]
 NetDrivers = List[NetworkDriver]
@@ -57,10 +57,14 @@ class UtilityMixin:
         """
         directory: Path = self.find_current_dir()
         vars_file_name: str = (
-            f"{directory}{self.add_forward_slash(file_path)}{file_name}"
+            f"{directory}{self.add_forward_slash(path=file_path)}{file_name}"
         )
-        with open(vars_file_name, "r", encoding="utf-8") as vars_file:
-            return yaml.safe_load(vars_file)
+        with open(
+            file=vars_file_name,
+            mode="r",
+            encoding="utf-8",
+        ) as vars_file:
+            return yaml.safe_load(stream=vars_file)
 
 
 class NornirInitializer(UtilityMixin):
@@ -83,7 +87,7 @@ class NornirInitializer(UtilityMixin):
 
     def configure_nornir(self) -> Nornir:
         """Configure nornir."""
-        nornir_dir: str = self.add_forward_slash(self.nornir_dir)
+        nornir_dir: str = self.add_forward_slash(path=self.nornir_dir)
         nr: Nornir = InitNornir(
             config_file=f"{self.find_current_dir()}{nornir_dir}config.yaml",
         )
@@ -149,9 +153,13 @@ class Jinja2Environment(UtilityMixin):
         Returns:
             Environment: Jinja2 environment
         """
-        template_rel_dir_path: str = self.add_forward_slash(self.template_dir)
+        template_rel_dir_path: str = self.add_forward_slash(
+            path=self.template_dir,
+        )
         template_directory: str = f"{self.directory}{template_rel_dir_path}"
-        return Environment(loader=FileSystemLoader(template_directory))
+        return Environment(
+            loader=FileSystemLoader(searchpath=template_directory),
+        )
 
     def render_jinja2_variables(self) -> str:
         """Render jinja2 variables.
@@ -159,9 +167,13 @@ class Jinja2Environment(UtilityMixin):
         Returns:
             str: Rendered jinja2 variables
         """
-        template: Template = self.jinja_env.get_template(self.template_name)
+        template: Template = self.jinja_env.get_template(
+            name=self.template_name,
+        )
         jinja_vars: str = (
-            template.render(self.read_yaml_file("j2_vars", "ios.yml"))
+            template.render(
+                self.read_yaml_file(file_path="j2_vars", file_name="ios.yml"),
+            )
             if not self.j2_vars
             else template.render(self.j2_vars)
         )
@@ -173,10 +185,14 @@ class Jinja2Environment(UtilityMixin):
         Returns:
             str: Config file path
         """
-        formatted_path: str = self.add_forward_slash(self.config_dir)
+        formatted_path: str = self.add_forward_slash(path=self.config_dir)
         formatted_file_path: str = f"{formatted_path}{self.config_file}"
         config_file_path: str = f"{self.directory}{formatted_file_path}"
-        with open(config_file_path, "w", encoding="utf-8") as config_file:
+        with open(
+            file=config_file_path,
+            mode="w",
+            encoding="utf-8",
+        ) as config_file:
             config_file.write(self.j2_rendered_template)
         print("Created Jinja2 environment and rendered a config file")
 
@@ -205,9 +221,9 @@ class NetmikoDriverGuesser:
         self.username: str = username
         self.secret: NoneOrStr = secret
         self.password: str = password
-        self.list_of_netmiko_device_params: List[
-            Optional[Dict[Any, Any]]
-        ] = self.create_netmiko_device_params()
+        self.list_of_netmiko_device_params: List[Optional[Dict[Any, Any]]] = (
+            self.create_netmiko_device_params()
+        )
 
     def create_netmiko_device_params(self) -> List[Optional[Dict[Any, Any]]]:
         """Create netmiko device params.
@@ -263,10 +279,10 @@ class NapalmDriverGuesser:
         Args:
             netmiko_guesser (List[str]): List of netmiko platforms
         """
-        self.netmiko_guesser = netmiko_guesser
-        self.list_of_normalized_netmiko_platforms: List[
-            str
-        ] = self.normalize_netmiko_platform()
+        self.netmiko_guesser: List[str] = netmiko_guesser
+        self.list_of_normalized_netmiko_platforms: List[str] = (
+            self.normalize_netmiko_platform()
+        )
 
     def normalize_netmiko_platform(self) -> List[str]:
         """Normalize netmiko platforms.
@@ -293,7 +309,7 @@ class NapalmDriverGuesser:
         ]
         napalm_drivers: List[Type[NetworkDriver]] = []
         for driver in napalm_netutils_drivers:
-            napalm_drivers.append(get_network_driver(driver))
+            napalm_drivers.append(get_network_driver(name=driver))
 
         print("Guessed napalm drivers")
 
@@ -328,9 +344,9 @@ class NapalmDeviceConnection:
         self.username: str = username
         self.password: str = password
         self.secret: NoneOrStr = secret
-        self.list_of_napalm_device_params: List[
-            Dict[Any, Any]
-        ] = self.create_napalm_device_params()
+        self.list_of_napalm_device_params: List[Dict[Any, Any]] = (
+            self.create_napalm_device_params()
+        )
         self.list_of_device_connections: NetDrivers = self.connect_to_device()
 
     def create_napalm_device_params(self) -> List[Dict[Any, Any]]:

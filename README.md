@@ -1,4 +1,4 @@
-To deploy containerlab topology, use the command `containerlab deploy -t arista-lab-clab.yaml`
+To deploy containerlab topology, use the command `containerlab deploy -t arista-lab.clab.yaml`
 Default username is 'admin'
 Default password is 'admin'
 

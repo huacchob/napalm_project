@@ -1,0 +1,13 @@
+name: arista-lab
+
+topology:
+  nodes:
+    spine1:
+      kind: ceos
+      image: localhost/ceos:4.33.1F
+    leaf1:
+      kind: ceos
+      image: localhost/ceos:4.33.1F
+
+  links:
+    - endpoints: ["spine1:eth1", "leaf1:eth1"]

@@ -138,14 +138,14 @@ class Jinja2Environment(UtilityMixin):
             ],
             }
         """
+        self.directory: Path = self.find_current_dir()
         self.template_dir: str = template_dir
         self.template_name: str = template_name
-        self.config_dir: str = config_dir
+        self.config_dir: Path = Path(config_dir)
         self.config_file: str = config_file
         self.j2_vars: Optional[Dict[Any, Any]] = j2_vars
         self.jinja_env: Environment = self.setup_jinja2_env()
         self.j2_rendered_template: str = self.render_jinja2_variables()
-        self.directory: Path = self.find_current_dir()
 
     def setup_jinja2_env(self) -> Environment:
         """Create jinja2 environment setup.
@@ -153,12 +153,9 @@ class Jinja2Environment(UtilityMixin):
         Returns:
             Environment: Jinja2 environment
         """
-        template_rel_dir_path: str = self.add_forward_slash(
-            path=self.template_dir,
-        )
-        template_directory: str = f"{self.directory}{template_rel_dir_path}"
+        template_directory: Path = self.directory.joinpath(self.template_dir)
         return Environment(
-            loader=FileSystemLoader(searchpath=template_directory),
+            loader=FileSystemLoader(searchpath=str(object=template_directory)),
         )
 
     def render_jinja2_variables(self) -> str:
@@ -167,8 +164,9 @@ class Jinja2Environment(UtilityMixin):
         Returns:
             str: Rendered jinja2 variables
         """
+        # pdb.set_trace()
         template: Template = self.jinja_env.get_template(
-            name=self.template_name,
+            name=str(object=self.template_name),
         )
         jinja_vars: str = (
             template.render(
@@ -179,15 +177,15 @@ class Jinja2Environment(UtilityMixin):
         )
         return jinja_vars
 
-    def create_config_file(self) -> str:
+    def create_config_file(self) -> Path:
         """Create config file.
 
         Returns:
             str: Config file path
         """
-        formatted_path: str = self.add_forward_slash(path=self.config_dir)
-        formatted_file_path: str = f"{formatted_path}{self.config_file}"
-        config_file_path: str = f"{self.directory}{formatted_file_path}"
+        # formatted_path: str = self.add_forward_slash(path=self.config_dir)
+        formatted_file_path: Path = self.config_dir.joinpath(self.config_file)
+        config_file_path: Path = self.directory.joinpath(formatted_file_path)
         with open(
             file=config_file_path,
             mode="w",
@@ -321,7 +319,7 @@ class NapalmDeviceConnection:
 
     def __init__(
         self,
-        jinja_config_file_path: str,
+        jinja_config_file_path: Path,
         napalm_drivers: List[type[NetworkDriver]],
         device_ips: List[str],
         username: str,
@@ -338,7 +336,7 @@ class NapalmDeviceConnection:
             password (str): Password.
             secret (NoneOrStr): Secret or None.
         """
-        self.jinja_config_file_path: str = jinja_config_file_path
+        self.jinja_config_file_path: Path = jinja_config_file_path
         self.napalm_drivers: List[type[NetworkDriver]] = napalm_drivers
         self.device_ips: List[str] = device_ips
         self.username: str = username
@@ -408,7 +406,7 @@ class NapalmDeviceConnection:
         for device_conn in self.list_of_device_connections:
             device_conn.open()
             device_conn.load_merge_candidate(
-                filename=self.jinja_config_file_path,
+                filename=str(object=self.jinja_config_file_path),
             )
             devices_w_loaded_config.append(device_conn)
         print("Connected to devices and loaded configs")
@@ -451,13 +449,14 @@ def connect_to_device(
 
     Function is meant to bring together all classes.
     """
-    jinja_config_file_path: str = Jinja2Environment(
+    jinja_env: Jinja2Environment = Jinja2Environment(
         template_dir=template_dir,
         template_name=template_name,
         config_dir=config_dir,
         config_file=config_file,
         j2_vars=j2_vars,
-    ).create_config_file()
+    )
+    jinja_config_file_path: Path = jinja_env.create_config_file()
 
     netmiko_guesser: List[None | str] = NetmikoDriverGuesser(
         device_ips=device_ips,
@@ -481,7 +480,7 @@ def connect_to_device(
 
 
 device_ips: List[str] = [
-    "192.168.86.52",
+    "172.20.20.2",
 ]
 
 j2_vars: Dict[str, List[Dict[str, str]]] = {
@@ -502,11 +501,11 @@ j2_vars: Dict[str, List[Dict[str, str]]] = {
 connect_to_device(
     device_ips=device_ips,
     username="admin",
-    password="cisco",
+    password="admin",
     secret=None,
     j2_vars=None,
-    template_dir="\\templates\\",
+    template_dir="templates",
     template_name="full_config.j2",
-    config_dir="\\intended_config\\",
+    config_dir="intended_config",
     config_file="config.txt",
 )
